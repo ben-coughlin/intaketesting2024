@@ -19,7 +19,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.tfod.TfodProcessor;
+//import org.firstinspires.ftc.vision.tfod.TfodProcessor; commented this out for the intothedeep season since there is not vision
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
@@ -103,7 +103,7 @@ public abstract class AutoMaster extends OpMode {
     /**
      * The variable to store our instance of the TensorFlow Object Detection processor.
      */
-    public TfodProcessor tfod;
+    //public TfodProcessor tfod; commented this out for the intothedeep season since there is not vision
 
     /**
      * The variable to store our instance of the vision portal.
@@ -435,6 +435,7 @@ public abstract class AutoMaster extends OpMode {
 
     public abstract void mainLoop();
 
+    /*
     private void initTfod() {
 
         // Create the TensorFlow processor by using a builder.
@@ -495,4 +496,5 @@ public abstract class AutoMaster extends OpMode {
         visionPortal.setProcessorEnabled(tfod, true);
 
     }
+    */
 }
