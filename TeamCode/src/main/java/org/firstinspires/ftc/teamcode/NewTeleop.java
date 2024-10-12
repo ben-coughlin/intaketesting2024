@@ -1,489 +1,784 @@
+/* Copyright (c) 2017 FIRST. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted (subject to the limitations in the disclaimer below) provided that
+ * the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this list
+ * of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice, this
+ * list of conditions and the following disclaimer in the documentation and/or
+ * other materials provided with the distribution.
+ *
+ * Neither the name of FIRST nor the names of its contributors may be used to endorse or
+ * promote products derived from this software without specific prior written permission.
+ *
+ * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+ * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package org.firstinspires.ftc.teamcode;
 
-import androidx.annotation.NonNull;
+import static org.firstinspires.ftc.teamcode.MovementVars.movement_turn;
+import static org.firstinspires.ftc.teamcode.MovementVars.movement_x;
+import static org.firstinspires.ftc.teamcode.MovementVars.movement_y;
+import static org.firstinspires.ftc.teamcode.RobotPosition.worldAngle_rad;
+import static org.firstinspires.ftc.teamcode.RobotPosition.worldXPosition;
+import static org.firstinspires.ftc.teamcode.RobotPosition.worldYPosition;
 
-import com.acmerobotics.dashboard.canvas.Canvas;
-import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.acmerobotics.roadrunner.*;
-import com.acmerobotics.roadrunner.AngularVelConstraint;
-import com.acmerobotics.roadrunner.DualNum;
-import com.acmerobotics.roadrunner.HolonomicController;
-import com.acmerobotics.roadrunner.MecanumKinematics;
-import com.acmerobotics.roadrunner.MinVelConstraint;
-import com.acmerobotics.roadrunner.MotorFeedforward;
+import android.os.SystemClock;
+
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.Pose2dDual;
-import com.acmerobotics.roadrunner.ProfileAccelConstraint;
-import com.acmerobotics.roadrunner.Time;
-import com.acmerobotics.roadrunner.TimeTrajectory;
-import com.acmerobotics.roadrunner.TimeTurn;
-import com.acmerobotics.roadrunner.TrajectoryActionBuilder;
-import com.acmerobotics.roadrunner.TurnConstraints;
-import com.acmerobotics.roadrunner.Twist2dDual;
-import com.acmerobotics.roadrunner.VelConstraint;
-import com.acmerobotics.roadrunner.ftc.DownsampledWriter;
-import com.acmerobotics.roadrunner.ftc.Encoder;
-import com.acmerobotics.roadrunner.ftc.FlightRecorder;
-import com.acmerobotics.roadrunner.ftc.LazyImu;
-import com.acmerobotics.roadrunner.ftc.LynxFirmware;
-import com.acmerobotics.roadrunner.ftc.OverflowEncoder;
-import com.acmerobotics.roadrunner.ftc.PositionVelocityPair;
-import com.acmerobotics.roadrunner.ftc.RawEncoder;
-import com.qualcomm.hardware.lynx.LynxModule;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.messages.DriveCommandMessage;
-import org.firstinspires.ftc.teamcode.messages.MecanumCommandMessage;
-import org.firstinspires.ftc.teamcode.messages.MecanumLocalizerInputsMessage;
-import org.firstinspires.ftc.teamcode.messages.PoseMessage;
+import java.util.ArrayList;
+import java.util.HashMap;
+//import org.firstinspires.ftc.vision.VisionPortal;
+//import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+//import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-import java.lang.Math;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+//@TeleOp(name = "NewTeleop", group = "Mechbot")
+public class NewTeleop extends AutoMaster {
 
-@Config
-public final class MecanumDrive {
-    public static class Params {
-        // IMU orientation
-        // TODO: fill in these values based on
-        //   see https://ftc-docs.firstinspires.org/en/latest/programming_resources/imu/imu.html?highlight=imu#physical-hub-mounting
-        public RevHubOrientationOnRobot.LogoFacingDirection logoFacingDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.UP;
-        public RevHubOrientationOnRobot.UsbFacingDirection usbFacingDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
+    boolean justDidAReapproach = false;
 
-        // drive model parameters
-        public double inPerTick = 1;
-        public double lateralInPerTick = inPerTick;
-        public double trackWidthTicks = 0;
+    Servo pixelHolder;
 
-        // feedforward parameters (in tick units)
-        public double kS = 0;
-        public double kV = 0;
-        public double kA = 0;
+    private int height = 1;
 
-        // path profile parameters (in inches)
-        public double maxWheelVel = 50;
-        public double minProfileAccel = -30;
-        public double maxProfileAccel = 50;
+    double robotLiftMaxTicks = 10573;
 
-        // turn profile parameters (in radians)
-        public double maxAngVel = Math.PI; // shared with path
-        public double maxAngAccel = Math.PI;
+    @Override
+    public void init() {
+        super.init();      //Ask Miles what this is?
 
-        // path controller gains
-        public double axialGain = 0.0;
-        public double lateralGain = 0.0;
-        public double headingGain = 0.0; // shared with turn
+        drive = new MecanumDrive(hardwareMap, new Pose2d(17.75 / 2, 23.75, Math.PI));  // this initilizes the Odo?
 
-        public double axialVelGain = 0.0;
-        public double lateralVelGain = 0.0;
-        public double headingVelGain = 0.0; // shared with turn
+        fourBars.setFourBarPosition(0.4);
+
+        grippers.frontGripper.setPosition(.16); // init grippers closed
+        grippers.backGripper.setPosition(.21);
+
+        intakeServo.intakeServo.setPosition(0);
+
+        pixelHolder = hardwareMap.get(Servo.class, "pixelHolder");
+        pixelHolder.setPosition(0.27);
+
     }
 
-    public static Params PARAMS = new Params();
+    @Override
+    public void start() {
+        super.start(); //what is super.start?
 
-    public final MecanumKinematics kinematics = new MecanumKinematics(
-            PARAMS.inPerTick * PARAMS.trackWidthTicks, PARAMS.inPerTick / PARAMS.lateralInPerTick);
+        fourBars.setFourBarPosition(0.4);
 
-    public final TurnConstraints defaultTurnConstraints = new TurnConstraints(
-            PARAMS.maxAngVel, -PARAMS.maxAngAccel, PARAMS.maxAngAccel);
-    public final VelConstraint defaultVelConstraint =
-            new MinVelConstraint(Arrays.asList(
-                    kinematics.new WheelVelConstraint(PARAMS.maxWheelVel),
-                    new AngularVelConstraint(PARAMS.maxAngVel)
-            ));
-    public final AccelConstraint defaultAccelConstraint =
-            new ProfileAccelConstraint(PARAMS.minProfileAccel, PARAMS.maxProfileAccel);
+        grippers.frontGripper.setPosition(.16);
+        grippers.backGripper.setPosition(.21);
 
-    public final DcMotorEx leftFront, leftBack, rightBack, rightFront;
+        pixelTwister.setPixelTwisterPosition(.49);
 
-    public final VoltageSensor voltageSensor;
+        pawright.setPosition(0.59);
 
-    public final LazyImu lazyImu;
+        droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(0.8);
 
-    public final Localizer localizer;
-    public Pose2d pose;
 
-    private final LinkedList<Pose2d> poseHistory = new LinkedList<>();
+        //fourBars.setFourBarPosition(0.4);
+        //pixelLift.pControllerPixelLift.setSetPoint(600);
+        //startTime = System.currentTimeMillis();
+    }
 
-    private final DownsampledWriter estimatedPoseWriter = new DownsampledWriter("ESTIMATED_POSE", 50_000_000);
-    private final DownsampledWriter targetPoseWriter = new DownsampledWriter("TARGET_POSE", 50_000_000);
-    private final DownsampledWriter driveCommandWriter = new DownsampledWriter("DRIVE_COMMAND", 50_000_000);
-    private final DownsampledWriter mecanumCommandWriter = new DownsampledWriter("MECANUM_COMMAND", 50_000_000);
+    @Override
+    public void stop() {
+        super.stop(); //what is super.stop?
+        droneAndRobotLiftRotator.droneAndRobotLiftRotator.setPwmDisable();
 
-    public class DriveLocalizer implements Localizer {
-        public final Encoder leftFront, leftBack, rightBack, rightFront;
-        public final IMU imu;
+        //for rumble added 4/6
+        //runtime.reset();
+    }
 
-        private int lastLeftFrontPos, lastLeftBackPos, lastRightBackPos, lastRightFrontPos;
-        private Rotation2d lastHeading;
-        private boolean initialized;
+    private boolean pickupPixelAutomation = false;
+    private long pickupPixelAutomationStartTime = 0;
 
-        public DriveLocalizer() {
-            leftFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftFront));
-            leftBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftBack));
-            rightBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightBack));
-            rightFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightFront));
+    private boolean past90Post = false;
 
-            imu = lazyImu.get();
+    private boolean liftPrepDeliveryAutomation = false;
+    private long liftPrepDeliveryAutomationStarTime = 0;
 
-            // TODO: reverse encoders if needed
-            //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+    private boolean dropPixelAutomation = false;
+    private boolean dropPixelAutomation2 = false;
+    private long dropPixelAutomationStarTime = 0;
+
+
+    private boolean setFourBarCenterAutomation = false;
+    private long setFourBarCenterAutomationStarTime = 0;
+
+
+    private boolean driveTrainCorrection = false;
+
+    double currentPoint = 0;
+
+    boolean isRight = false;
+    boolean isLeft = false;
+
+    private boolean autoPilotEnabled = false;
+    private boolean atBackdrop = false;
+    private long timeAtBackdrop = 0;
+
+    private final double SCALE_FACTOR = 2.7;
+
+    private double startX = 0;
+    private double startY = 0;
+
+    private double startXDriveBridge = 0;
+    private double startYDriveBridge = 0;
+
+    private boolean lockHeading = false;
+
+    private Pose2d targetPose = new Pose2d(0, 0, 0);
+
+    private ArrayList<Double> distances = new ArrayList<>();
+
+    private boolean intakeOn = false;
+    private boolean outtakeOn = false;
+
+
+    private boolean shootDroneAutomation = false;
+    private long shootDroneAutomationStartTime = 0;
+
+    private int state = 0;
+
+    private boolean liftIsDown = false;
+    private long liftIsDownTime = 0;
+
+    //public ArrayList<CurvePoint>
+
+    // for rumble added 4/6 - rest of code on ln 599
+
+    // ElapsedTime runtime = new ElapsedTime();
+    // boolean rumblePreVal = false;
+
+    private int targetDrop = 0;
+
+    private HashMap<Integer, PointDouble> yellowDropBlue = new HashMap<Integer, PointDouble>() {{
+        put(0, new PointDouble(30, 118));
+        put(1, new PointDouble(36, 118));
+        put(2, new PointDouble(42, 118));
+    }};
+
+    private HashMap<Integer, PointDouble> yellowDropRed = new HashMap<Integer, PointDouble>() {{
+        put(0, new PointDouble(102, 118));
+        put(1, new PointDouble(109, 118));
+        put(2, new PointDouble(114, 118));
+    }};
+
+    private ArrayList<PointDouble> driveUnderBridgePoints = new ArrayList<PointDouble>() {{
+        add(new PointDouble(10.3, 95));
+        add(new PointDouble(32.3 + 0.5, 95));
+        add(new PointDouble(104.7 + 0.5, 95));
+        add(new PointDouble(128.6 + 0.5, 95));
+        add(new PointDouble(10.3 + 0.5, 95 - 70));
+        add(new PointDouble(32.3 + 0.5, 95 - 70));
+        add(new PointDouble(104.7 + 0.5, 95 - 70));
+        add(new PointDouble(128.6 + 0.5, 95 - 70));
+    }};
+
+    PointDouble closestPoint = new PointDouble(0, 0);
+    private int closestPointIndex = 0;
+
+    private boolean autoDriveToDroneLaunch = false;
+    //private PointDouble autoDriveToDroneLaunchPosition = new PointDouble();
+
+    private double launchStartX = 0;
+    private double launchStartY = 0;
+
+    public enum Alliance {
+        RED,
+        BLUE
+    }
+
+    public Alliance alliance;
+
+    @Override
+    public void mainLoop() {
+        ///telemetry.addData("range", String.format("%.01f mm", sensorDistance.getDistance(DistanceUnit.MM)));
+
+        double liftPosition = pixelLift.pixelLift.getCurrentPosition();
+
+
+        ButtonPress.giveMeInputs(gamepad1.a, gamepad1.b, gamepad1.x, gamepad1.y, gamepad1.dpad_up,
+                gamepad1.dpad_down, gamepad1.dpad_right, gamepad1.dpad_left, gamepad1.right_bumper,
+                gamepad1.left_bumper, gamepad1.left_stick_button, gamepad1.right_stick_button,
+                gamepad2.a, gamepad2.b, gamepad2.x, gamepad2.y, gamepad2.dpad_up,
+                gamepad2.dpad_down, gamepad2.dpad_right, gamepad2.dpad_left, gamepad2.right_bumper,
+                gamepad2.left_bumper, gamepad2.left_stick_button, gamepad2.right_stick_button);
+
+        if (ButtonPress.isGamepad1_right_stick_button_pressed()) {
+            launchStartX = worldXPosition;
+            launchStartY = worldYPosition;
         }
 
-        @Override
-        public Twist2dDual<Time> update() {
-            PositionVelocityPair leftFrontPosVel = leftFront.getPositionAndVelocity();
-            PositionVelocityPair leftBackPosVel = leftBack.getPositionAndVelocity();
-            PositionVelocityPair rightBackPosVel = rightBack.getPositionAndVelocity();
-            PositionVelocityPair rightFrontPosVel = rightFront.getPositionAndVelocity();
+        if (gamepad1.right_stick_button) {  // this is for drone launch Auto drive
 
-            YawPitchRollAngles angles = imu.getRobotYawPitchRollAngles();
+            autoDriveToDroneLaunch = true;
+            ArrayList<CurvePoint> points2 = new ArrayList<>();
 
-            FlightRecorder.write("MECANUM_LOCALIZER_INPUTS", new MecanumLocalizerInputsMessage(
-                    leftFrontPosVel, leftBackPosVel, rightBackPosVel, rightFrontPosVel, angles));
+            points2.add(new CurvePoint(launchStartX, launchStartY,
+                    0, 0, 0, 0, 0, 0));
 
-            Rotation2d heading = Rotation2d.exp(angles.getYaw(AngleUnit.RADIANS));
+            double wantedX = alliance == Alliance.RED ? 115 : 31;
+            // 80
+            double wantedY = alliance == Alliance.RED ? 84 : 89.2;
 
-            if (!initialized) {
-                initialized = true;
+            points2.add(new CurvePoint(wantedX, wantedY,
+                    0.7 * SCALE_FACTOR, 0.7 * SCALE_FACTOR, 15, 15,
+                    Math.toRadians(60), 0.6));
 
-                lastLeftFrontPos = leftFrontPosVel.position;
-                lastLeftBackPos = leftBackPosVel.position;
-                lastRightBackPos = rightBackPosVel.position;
-                lastRightFrontPos = rightFrontPosVel.position;
+            Movement.followCurve(points2, Math.toRadians(90), 1);
 
-                lastHeading = heading;
+            if (Math.abs(Math.hypot(worldXPosition - wantedX, worldYPosition - 87)) < 5) {
+                //-68
 
-                return new Twist2dDual<>(
-                        Vector2dDual.constant(new Vector2d(0.0, 0.0), 2),
-                        DualNum.constant(0.0, 2)
-                );
+                double wantedheading = alliance == Alliance.RED ? -90.1 : -90; // was -112 for reed
+                Movement.movementResult r = Movement.pointAngle(Math.toRadians(wantedheading), 1, Math.toRadians(30));
             }
-
-            double headingDelta = heading.minus(lastHeading);
-            Twist2dDual<Time> twist = kinematics.forward(new MecanumKinematics.WheelIncrements<>(
-                    new DualNum<Time>(new double[]{
-                            (leftFrontPosVel.position - lastLeftFrontPos),
-                            leftFrontPosVel.velocity,
-                    }).times(PARAMS.inPerTick),
-                    new DualNum<Time>(new double[]{
-                            (leftBackPosVel.position - lastLeftBackPos),
-                            leftBackPosVel.velocity,
-                    }).times(PARAMS.inPerTick),
-                    new DualNum<Time>(new double[]{
-                            (rightBackPosVel.position - lastRightBackPos),
-                            rightBackPosVel.velocity,
-                    }).times(PARAMS.inPerTick),
-                    new DualNum<Time>(new double[]{
-                            (rightFrontPosVel.position - lastRightFrontPos),
-                            rightFrontPosVel.velocity,
-                    }).times(PARAMS.inPerTick)
-            ));
-
-            lastLeftFrontPos = leftFrontPosVel.position;
-            lastLeftBackPos = leftBackPosVel.position;
-            lastRightBackPos = rightBackPosVel.position;
-            lastRightFrontPos = rightFrontPosVel.position;
-
-            lastHeading = heading;
-
-            return new Twist2dDual<>(
-                    twist.line,
-                    DualNum.cons(headingDelta, twist.angle.drop(1))
-            );
-        }
-    }
-
-    public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
-        this.pose = pose;
-
-        LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
-
-        for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
-            module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+        } else {
+            autoDriveToDroneLaunch = false;
         }
 
-        // TODO: make sure your config has motors with these names (or change them)
-        //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
-        leftBack = hardwareMap.get(DcMotorEx.class, "leftBack");
-        rightBack = hardwareMap.get(DcMotorEx.class, "rightBack");
-        rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
-
-        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        // TODO: reverse motor directions if needed
-        //   leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
-        //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
-        lazyImu = new LazyImu(hardwareMap, "imu", new RevHubOrientationOnRobot(
-                PARAMS.logoFacingDirection, PARAMS.usbFacingDirection));
-
-        voltageSensor = hardwareMap.voltageSensor.iterator().next();
-
-        localizer = new DriveLocalizer();
-
-        FlightRecorder.write("MECANUM_PARAMS", PARAMS);
-    }
-
-    public void setDrivePowers(PoseVelocity2d powers) {
-        MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
-                PoseVelocity2dDual.constant(powers, 1));
-
-        double maxPowerMag = 1;
-        for (DualNum<Time> power : wheelVels.all()) {
-            maxPowerMag = Math.max(maxPowerMag, power.value());
+        if (Math.abs(gamepad1.right_stick_x) > 0.1 || Math.abs(gamepad1.right_stick_y) > 0.1 || Math.abs(gamepad1.left_stick_x) > 0.1 || Math.abs(gamepad1.left_stick_y) > 0.1) {
+            dropPixelAutomation = false;
+            autoPilotEnabled = false;  // this turns auto off if sticks are touched
+            atBackdrop = false;
+            past90Post = false;  //this turns auto off if sticks are touched... should we make it exit out if GP2 lift stick is up too?
+            autoDriveToDroneLaunch = false;
         }
 
-        leftFront.setPower(wheelVels.leftFront.get(0) / maxPowerMag);
-        leftBack.setPower(wheelVels.leftBack.get(0) / maxPowerMag);
-        rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
-        rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
-    }
 
-    public final class FollowTrajectoryAction implements Action {
-        public final TimeTrajectory timeTrajectory;
-        private double beginTs = -1;
 
-        private final double[] xPoints, yPoints;
 
-        public FollowTrajectoryAction(TimeTrajectory t) {
-            timeTrajectory = t;
+        /*if (ButtonPress.isGamepad2_b_pressed()) {
+            currentPoint = worldAngle_rad;
+        }
 
-            List<Double> disps = com.acmerobotics.roadrunner.Math.range(
-                    0, t.path.length(),
-                    Math.max(2, (int) Math.ceil(t.path.length() / 2)));
-            xPoints = new double[disps.size()];
-            yPoints = new double[disps.size()];
-            for (int i = 0; i < disps.size(); i++) {
-                Pose2d p = t.path.get(disps.get(i), 1).value();
-                xPoints[i] = p.position.x;
-                yPoints[i] = p.position.y;
+        if (gamepad2.b) {
+            Movement.movementResult r = Movement.pointAngle(currentPoint, 0.7, Math.toRadians(20));
+
+            movement_x = gamepad2.left_stick_x;
+        }*/
+
+        if (!dropPixelAutomation && !autoPilotEnabled && !atBackdrop && !past90Post && !gamepad1.a && !autoDriveToDroneLaunch) {  // this is the mechanum field centeric control does this make it so can't drive when in auto??
+            movement_y = -gamepad1.left_stick_y;
+            movement_x = gamepad1.left_stick_x;
+            movement_turn = -gamepad1.right_stick_x;
+        }
+
+        drive.applyMovementDirectionBased(); //this applys movement useing the mecanumDrive class
+
+
+        if (gamepad2.right_trigger > 0.1) {
+            intakeServo.intakeServo.setPosition(0.31);
+            intake.intake.setPower(1);
+            intake.conveyor.setPower(-.91);
+        } else if (gamepad2.left_trigger > 0.1) {
+            intakeServo.intakeServo.setPosition(0.31);
+            intake.intake.setPower(-1);
+            intake.conveyor.setPower(-.91);
+        } else {
+            // intake stuff
+            if (ButtonPress.isGamepad1_right_bumper_pressed()) {  //intake toggle
+                if (intakeOn) {
+                    intakeServo.intakeServo.setPosition(0);
+                    intake.intake.setPower(0);
+                    //intake.conveyor.setPower(0);
+                    intakeOn = false;
+                } else {
+                    intakeServo.intakeServo.setPosition(0.31);
+                    intake.intake.setPower(1);
+                    intake.conveyor.setPower(-.91);
+                    intakeOn = true;
+                }
+            } else if (ButtonPress.isGamepad1_left_bumper_pressed()) {  //outtake toggle.
+                if (outtakeOn) {
+                    intakeServo.intakeServo.setPosition(0);
+                    intake.intake.setPower(0);
+                    //intake.conveyor.setPower(0);
+                    outtakeOn = false;
+                } else {
+                    intakeServo.intakeServo.setPosition(0.31);
+                    intake.intake.setPower(-1);
+                    intake.conveyor.setPower(-.91);
+                    outtakeOn = true;
+                }
             }
         }
 
-        @Override
-        public boolean run(@NonNull TelemetryPacket p) {
-            double t;
-            if (beginTs < 0) {
-                beginTs = Actions.now();
-                t = 0;
+        // lift stuff for second controller
+        if (ButtonPress.isGamepad2_b_pressed()) {
+            height += 1;
+        } else if (ButtonPress.isGamepad2_a_pressed()) {
+            height -= 1;
+        }
+
+        height = Range.clip(height, 1, 10);
+
+        if (ButtonPress.isGamepad2_right_bumper_pressed()) {   // this is for pixel Lift placement height
+            pixelLift.pControllerPixelLift.setSetPoint(700 + height * 300);   // how is this intitated? I only see it in Auto master?
+            fourBars.setFourBarPosition(0);
+            intake.conveyor.setPower(0);
+            liftPrepDeliveryAutomation = true;
+            liftPrepDeliveryAutomationStarTime = SystemClock.uptimeMillis(); // captures run time and sets to start time variable
+
+        } else if (ButtonPress.isGamepad2_left_bumper_pressed()) {  // this is for pixel lift home state. gets twister to safe position
+            pixelTwister.setPixelTwisterPosition(.49);
+
+            setFourBarCenterAutomation = true;
+            setFourBarCenterAutomationStarTime = SystemClock.uptimeMillis();
+        }
+
+        if (liftPrepDeliveryAutomation) {  // this gives time for twister to get safe, and pixel lift is in safe elevation then sets 4 bar rotator to placement position
+            if (SystemClock.uptimeMillis() - liftPrepDeliveryAutomationStarTime > 250 && liftPosition > 400) {
+                fourBarRotator.setFourBarRotatorPosition(.45); //was .45 !!!!!!!!!!!!!!!!!!!!!!!!!! change requested by drive team on 04/04/24
+                liftPrepDeliveryAutomation = false;
+            }
+        }
+// this is for pixel ready (home) position for grab.. can't grab if lift isnt down...
+//
+
+        if (ButtonPress.isGamepad2_y_pressed() && liftPosition < 100) {
+            grippers.setFrontGripperPosition(.16);  // sets grippers to closed (released) position
+            grippers.setBackGripperPosition(.21);
+
+            pixelTwister.setPixelTwisterPosition(.49);
+
+            setFourBarCenterAutomation = true;
+            setFourBarCenterAutomationStarTime = SystemClock.uptimeMillis();
+        }
+
+        telemetry.addData("Is Touched", limitSwitch.getState());
+
+        if (setFourBarCenterAutomation) {
+            if (SystemClock.uptimeMillis() - setFourBarCenterAutomationStarTime > 500) { // gives grabbers and twister time to get to home position
+                fourBars.setFourBarPosition(0.4);
+                fourBarRotator.setFourBarRotatorPosition(0.82);
+                if (liftPosition < 250 || SystemClock.uptimeMillis() - setFourBarCenterAutomationStarTime > 3500) {
+                    pixelLift.pixelLift.setPower(-0.15);
+                    //pixelLift.pControllerPixelLift.setSetPoint(liftposition);
+                    boolean lsLiftState = limitSwitch.getState();
+                    if (lsLiftState || SystemClock.uptimeMillis() - setFourBarCenterAutomationStarTime > 5000) {
+                        pixelLift.pixelLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        pixelLift.pixelLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                        pixelLift.pixelLift.setPower(0);
+                        setFourBarCenterAutomation = false;
+                    }
+                } else {
+                    pixelLift.pControllerPixelLift.setSetPoint(0);
+                    pixelLift.updateLiftPosition();
+                }
+            }
+        }
+
+//THis is for the pixel grab
+        if (ButtonPress.isGamepad2_x_pressed() && liftPosition < 100) {
+            //pixelTwister.setPixelTwisterPosition(.49);
+
+
+            grippers.setFrontGripperPosition(.16); //make sure grippers, 4 bars, rotator are in collection state
+            grippers.setBackGripperPosition(.21);
+
+            fourBars.setFourBarPosition(0.75);
+            fourBarRotator.setFourBarRotatorPosition(0.825);
+
+            intake.conveyor.setPower(-.91); // turns on intake to have pixels lined up correctly
+            pickupPixelAutomation = true;  // starts the pixel pick up state
+            pickupPixelAutomationStartTime = SystemClock.uptimeMillis();
+        }
+
+        // this is for the pixel pick up
+
+        if (pickupPixelAutomation) {
+            double wantedPos = 1;    // this is for the slow pick up target servo pos.
+            double currentPos = fourBars.getLastSetPosition();
+            currentPos += 0.01; //increments servo pos. each loop
+            if (SystemClock.uptimeMillis() - pickupPixelAutomationStartTime > 400 && currentPos >= 0.95) { //  waits for grippers, 4 bars, rotator to get into collection state before grabbing
+                fourBars.setFourBarPosition(1);
+                intake.conveyor.setPower(0);
+                grippers.setFrontGripperPosition(0.66);  //grab pixels
+                grippers.setBackGripperPosition(0.74);
+                pickupPixelAutomation = false; //turns off pick Auto.
             } else {
-                t = Actions.now() - beginTs;
+                if (SystemClock.uptimeMillis() - pickupPixelAutomationStartTime > 250) {  // this changes the 4 bars with each loop when it gets .95 it'll do the above if satatement
+                    if (currentPos < wantedPos) {
+                        fourBars.setFourBarPosition(currentPos);
+                    }
+                    //fourBars.setFourBarPosition(1);
+                }
+            }
+        }
+
+        if (Math.abs(gamepad2.right_stick_y) > 0.01) {
+            setFourBarCenterAutomation = false;
+        }
+
+        if (Math.abs(gamepad2.right_stick_y) < 0.01 && !setFourBarCenterAutomation) {  //for pixel lift control
+            //if (pixelLift.pixelLiftPosition)
+            //pixelLift.updateLiftPosition();
+            // TODO: IS THIS OKAY?
+            pixelLift.updateLiftPosition(); // only update if controller is ).01
+        } else if (!setFourBarCenterAutomation) {
+            pixelLift.pControllerPixelLift.setSetPoint(liftPosition);  // holds lift at last position using p controller
+            pixelLift.pixelLift.setPower(-gamepad2.right_stick_y); // sets power of the lift equal to the stick value.
+        }
+
+        if (ButtonPress.isGamepad1_x_pressed() && liftPosition > 300) {  // game pad 1 for dropping
+            dropPixelAutomation = true; // toggles to the pixel drop automatin 1 and 2 at the same time
+            dropPixelAutomation2 = true;
+            dropPixelAutomationStarTime = SystemClock.uptimeMillis();
+        }
+
+        if (ButtonPress.isGamepad1_a_pressed()) {
+            double minDistance = Double.POSITIVE_INFINITY; // start his off crazy high
+            int i = 0;
+            for (PointDouble point : driveUnderBridgePoints) {
+                double distance = Math.hypot(worldXPosition - point.x, worldYPosition - point.y);
+               /* Log.i("DEBUG -----------------------------", "----------");
+                Log.i("DEBUG Current Index: ", String.valueOf(i));
+                Log.i("DEBUG Bridge Point X: ", String.valueOf(point.x));
+                Log.i("DEBUG Bridge Point Y: ", String.valueOf(point.y));
+                Log.i("DEBUG Bridge Distance: ", String.valueOf(distance));
+                Log.i("DEBUG -----------------------------", "----------");*/
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPoint = new PointDouble(point.x, point.y);
+                    closestPointIndex = i;
+                }
+                i++;
+            }
+            /*Log.i("DEBUG ----THIS IS THE ONE WE WANT TO GO TO------", "----------");
+            Log.i("DEBUG Current Index: ", String.valueOf(closestPointIndex));
+            Log.i("DEBUG Bridge Point X: ", String.valueOf(closestPoint.x));
+            Log.i("DEBUG Bridge Point Y: ", String.valueOf(closestPoint.y));
+            Log.i("DEBUG -----------------------------", "----------");*/
+            startXDriveBridge = worldXPosition;
+            startYDriveBridge = worldYPosition;
+        }
+
+        telemetry.addData("Closest Point X", closestPoint.x);
+        telemetry.addData("Closest Point Y", closestPoint.y);
+
+        if (gamepad1.a) {
+            ArrayList<CurvePoint> points = new ArrayList<>();
+
+            points.add(new CurvePoint(startXDriveBridge, startYDriveBridge,
+                    0, 0, 0, 0, 0, 0));
+
+            points.add(new CurvePoint(closestPoint.x, closestPoint.y,
+                    0.5 * SCALE_FACTOR, 0.5 * SCALE_FACTOR, 15, 15,
+                    Math.toRadians(60), 0.6));
+
+            points.add(new CurvePoint(closestPoint.x, closestPoint.y + (closestPointIndex > 3 ? 70 : -70),
+                    0.5 * SCALE_FACTOR, 0.5 * SCALE_FACTOR, 15, 15,
+                    Math.toRadians(60), 0.6));
+
+            if (Math.abs(Math.hypot(worldXPosition - closestPoint.x, worldYPosition - closestPoint.y)) < 20) {
+                lockHeading = true;
             }
 
-            if (t >= timeTrajectory.duration) {
-                leftFront.setPower(0);
-                leftBack.setPower(0);
-                rightBack.setPower(0);
-                rightFront.setPower(0);
+            //drive.applyMovementDirectionBased();
 
-                return false;
+            if (Movement.followCurve(points, closestPointIndex > 3 ? Math.toRadians(-90) : Math.toRadians(90), 3)) {
+                drive.stopAllMovementDirectionBased();
             }
 
-            Pose2dDual<Time> txWorldTarget = timeTrajectory.get(t);
-            targetPoseWriter.write(new PoseMessage(txWorldTarget.value()));
-
-            PoseVelocity2d robotVelRobot = updatePoseEstimate();
-
-            PoseVelocity2dDual<Time> command = new HolonomicController(
-                    PARAMS.axialGain, PARAMS.lateralGain, PARAMS.headingGain,
-                    PARAMS.axialVelGain, PARAMS.lateralVelGain, PARAMS.headingVelGain
-            )
-                    .compute(txWorldTarget, pose, robotVelRobot);
-            driveCommandWriter.write(new DriveCommandMessage(command));
-
-            MecanumKinematics.WheelVelocities<Time> wheelVels = kinematics.inverse(command);
-            double voltage = voltageSensor.getVoltage();
-
-            final MotorFeedforward feedforward = new MotorFeedforward(PARAMS.kS,
-                    PARAMS.kV / PARAMS.inPerTick, PARAMS.kA / PARAMS.inPerTick);
-            double leftFrontPower = feedforward.compute(wheelVels.leftFront) / voltage;
-            double leftBackPower = feedforward.compute(wheelVels.leftBack) / voltage;
-            double rightBackPower = feedforward.compute(wheelVels.rightBack) / voltage;
-            double rightFrontPower = feedforward.compute(wheelVels.rightFront) / voltage;
-            mecanumCommandWriter.write(new MecanumCommandMessage(
-                    voltage, leftFrontPower, leftBackPower, rightBackPower, rightFrontPower
-            ));
-
-            leftFront.setPower(leftFrontPower);
-            leftBack.setPower(leftBackPower);
-            rightBack.setPower(rightBackPower);
-            rightFront.setPower(rightFrontPower);
-
-            p.put("x", pose.position.x);
-            p.put("y", pose.position.y);
-            p.put("heading (deg)", Math.toDegrees(pose.heading.toDouble()));
-
-            Pose2d error = txWorldTarget.value().minusExp(pose);
-            p.put("xError", error.position.x);
-            p.put("yError", error.position.y);
-            p.put("headingError (deg)", Math.toDegrees(error.heading.toDouble()));
-
-            // only draw when active; only one drive action should be active at a time
-            Canvas c = p.fieldOverlay();
-            drawPoseHistory(c);
-
-            c.setStroke("#4CAF50");
-            Drawing.drawRobot(c, txWorldTarget.value());
-
-            c.setStroke("#3F51B5");
-            Drawing.drawRobot(c, pose);
-
-            c.setStroke("#4CAF50FF");
-            c.setStrokeWidth(1);
-            c.strokePolyline(xPoints, yPoints);
-
-            return true;
+            if (lockHeading) {
+                Movement.movementResult r = Movement.pointAngle(Math.toRadians(-90), 1, Math.toRadians(30));
+            }
+        } else {
+            lockHeading = false;
         }
 
-        @Override
-        public void preview(Canvas c) {
-            c.setStroke("#4CAF507A");
-            c.setStrokeWidth(1);
-            c.strokePolyline(xPoints, yPoints);
+
+        if (dropPixelAutomation2) {
+            if (SystemClock.uptimeMillis() - dropPixelAutomationStarTime > 1250) { // was 1250 - added extra time when we added async drops
+                pixelTwister.setPixelTwisterPosition(.49);
+
+                setFourBarCenterAutomation = true; // run the 4 bar center automation on line 267. waits 1/2 sec then sets rotator, lift, and 4 bars to placement position
+                setFourBarCenterAutomationStarTime = SystemClock.uptimeMillis();
+
+                dropPixelAutomation2 = false;
+            }
         }
-    }
+        if (dropPixelAutomation) {  // releases the the pixels
 
-    public final class TurnAction implements Action {
-        private final TimeTurn turn;
+            if (pixelTwister.pixelTwister.getPosition() > 0.95 || pixelTwister.pixelTwister.getPosition() < 0.1) //added statements to drop top pixel after waiting
+            {
 
-        private double beginTs = -1;
+                grippers.setBackGripperPosition(.16);
 
-        public TurnAction(TimeTurn turn) {
-            this.turn = turn;
-        }
+                if (SystemClock.uptimeMillis() - dropPixelAutomationStarTime > 450) {  // waits .45 secs to drop top pixel
+                    grippers.setFrontGripperPosition(.21);
+                }
 
-        @Override
-        public boolean run(@NonNull TelemetryPacket p) {
-            double t;
-            if (beginTs < 0) {
-                beginTs = Actions.now();
-                t = 0;
+            } else if (pixelTwister.pixelTwister.getPosition() > 0.55 || pixelTwister.pixelTwister.getPosition() < 0.45) //added statements to drop top pixel after waiting
+            {
+
+                grippers.setFrontGripperPosition(.21);
+
+                if (SystemClock.uptimeMillis() - dropPixelAutomationStarTime > 450) {  // waits .45 secs to drop top pixel
+                    grippers.setBackGripperPosition(.16);
+                }
+
             } else {
-                t = Actions.now() - beginTs;
+                grippers.setFrontGripperPosition(.16);
+                grippers.setBackGripperPosition(.21);
+
+            }
+            if (SystemClock.uptimeMillis() - dropPixelAutomationStarTime > 750) {  // waits 1 sec then uses odo to back away
+                movement_y = 0.25;
+            }
+            if (SystemClock.uptimeMillis() - dropPixelAutomationStarTime > 1250) { // waits 1.8  sec then ... moves forward? ask Miles about this?
+                movement_y = 0;
+
+                dropPixelAutomation = false;
+            }
+        }
+
+        telemetry.addData("Lift position", liftPosition);
+        telemetry.addData("In Four Bar Automation", setFourBarCenterAutomation);
+
+        // TODO: REMOVE
+        if (liftPosition > 300 && fourBars.right4Bar.getPosition() < 0.2) {  // if lift is higher than 300 and 4 bars are out can rotate pixel twister
+            if (ButtonPress.isGamepad2_dpad_left_pressed()) {  // ask Miles about the .get curent pos in the if statement. this doesnt call each loop?
+                pixelTwister.setPixelTwisterPosition(.775);  // twists left to 90
+                isLeft = true;
+                isRight = false;
+            }
+            if (ButtonPress.isGamepad2_dpad_right_pressed()) {
+                pixelTwister.setPixelTwisterPosition(.22); // twists right to 90tw
+                isLeft = false;
+                isRight = true;
+            }
+            if (ButtonPress.isGamepad2_dpad_up_pressed()) {  // defines what to do when at 90 and up is pressed
+                if (isRight) {
+                    pixelTwister.setPixelTwisterPosition(0); // goes up when right
+                } else if (isLeft) {
+                    pixelTwister.setPixelTwisterPosition(1); // goes up when left
+                } else {
+                    pixelTwister.setPixelTwisterPosition(.49); // goes back to home when up is pressed and not already twisted to the correct side.
+                }
+            }
+        }
+
+        if (ButtonPress.isGamepad2_dpad_down_pressed()) {  // if down is pressed go to down.
+            pixelTwister.setPixelTwisterPosition(.49);
+            isLeft = false;
+            isRight = false;
+        }
+
+        if (ButtonPress.isGamepad1_left_stick_button_pressed()) {    // This is teleOpp recal
+            //25.4
+            // TODO: ADD IN NEW SENSOR
+
+            if (alliance == Alliance.BLUE) {
+                double xDir = getRightDistanceIn() + (16.25 / 2); //sensorDistance.getDistance(DistanceUnit.MM) / 25.4; //gets measurement from wall
+
+                drive.pose = new Pose2d(xDir, 121, Math.toRadians(-90)); // this defines the robots pos in front of backdrop... uses xDIR to define x pos
+                targetPose = drive.pose; //sets the tele auto drive target postion
+            } else {
+                double xDir = getLeftDistanceIn() - (16.25 / 2) + 6; //sensorDistance.getDistance(DistanceUnit.MM) / 25.4; //gets measurement from wall
+
+                drive.pose = new Pose2d(131 - xDir, 121, Math.toRadians(-90)); // this defines the robots pos in front of backdrop... uses xDIR to define x pos
+                targetPose = drive.pose; //sets the tele auto drive target postion
+            }
+        }
+
+        telemetry.addData("RED DISTANCE SENSOR", getLeftDistanceIn());
+
+        if (ButtonPress.isGamepad1_dpad_right_pressed()) {
+            //targetPose = new Pose2d(targetPose.position.x-0.5, targetPose.position.y, targetPose.heading.toDouble());  // this moves target pose right 1/2 inch
+
+            targetDrop = 2;
+        }
+
+        if (ButtonPress.isGamepad1_dpad_left_pressed()) {
+            //targetPose = new Pose2d(targetPose.position.x+0.5, targetPose.position.y, targetPose.heading.toDouble()); // this moves target pose left 1/2 inch
+
+            targetDrop = 0;
+        }
+
+        if (ButtonPress.isGamepad1_dpad_up_pressed()) {
+            //targetPose = new Pose2d(targetPose.position.x+0.5, targetPose.position.y, targetPose.heading.toDouble()); // this moves target pose left 1/2 inch
+
+            targetDrop = 1;
+        }
+
+        telemetry.addData("Target X", targetPose.position.x);
+
+        if (ButtonPress.isGamepad1_y_pressed()) {  // when y is pressed start auto drive
+            if (targetPose.position.x != 0 && targetPose.position.y != 0) {
+                startX = worldXPosition;  // gets current pos.
+                startY = worldYPosition;
+                autoPilotEnabled = true;
+            }
+        }
+
+        if (autoPilotEnabled) {     // auto drive points.
+            ArrayList<CurvePoint> points = new ArrayList<>();
+            points.add(new CurvePoint(startX, startY,
+                    0, 0, 0, 0, 0, 0));
+
+            points.add(new CurvePoint(65, 37,
+                    0.8 * SCALE_FACTOR, 0.8 * SCALE_FACTOR, 25, 25,
+                    Math.toRadians(60), 0.6));
+
+            points.add(new CurvePoint(65, 83,
+                    0.8 * SCALE_FACTOR, 0.8 * SCALE_FACTOR, 25, 25,
+                    Math.toRadians(60), 0.6));
+
+            HashMap<Integer, PointDouble> expectedMapping = alliance == Alliance.RED ? yellowDropRed : yellowDropBlue;
+
+            points.add(new CurvePoint(expectedMapping.get(targetDrop).x, expectedMapping.get(targetDrop).y - 15,
+                    0.7 * SCALE_FACTOR, 0.7 * SCALE_FACTOR, 15, 15,
+                    Math.toRadians(60), 0.6));
+
+            points.add(new CurvePoint(expectedMapping.get(targetDrop).x, expectedMapping.get(targetDrop).y,
+                    0.15 * SCALE_FACTOR, 0.15 * SCALE_FACTOR, 15, 8,
+                    Math.toRadians(60), 0.6));
+
+            if (worldYPosition > 86) {   // past gate, start auto lift
+                past90Post = true;
             }
 
-            if (t >= turn.duration) {
-                leftFront.setPower(0);
-                leftBack.setPower(0);
-                rightBack.setPower(0);
-                rightFront.setPower(0);
+            if (past90Post) {
+                pixelLift.pControllerPixelLift.setSetPoint(700 + height * 300);
+                fourBars.setFourBarPosition(0);
+                intake.conveyor.setPower(0);
 
-                return false;
+                if (pixelLift.pixelLiftPosition > 400) {
+                    fourBarRotator.setFourBarRotatorPosition(.45);
+                    past90Post = false;
+                }
             }
 
-            Pose2dDual<Time> txWorldTarget = turn.get(t);
-            targetPoseWriter.write(new PoseMessage(txWorldTarget.value()));
+            double distance = Math.sqrt(Math.pow(worldXPosition - targetPose.position.x, 2) + Math.pow(worldYPosition - targetPose.position.y, 2));
 
-            PoseVelocity2d robotVelRobot = updatePoseEstimate();
+            if (!atBackdrop) {
+                if (Movement.followCurve(points, Math.toRadians(-90), 3)) {
+                    drive.stopAllMovementDirectionBased();
+                    timeAtBackdrop = SystemClock.uptimeMillis();
+                    atBackdrop = false;
+                    autoPilotEnabled = false;
+                    //atBackdrop = true;
+                }
+            }
+/*
+            if (atBackdrop) {
+                movement_y = -0.2;
+                if (SystemClock.uptimeMillis()-timeAtBackdrop > 500) {
+                    atBackdrop = false;
+                    autoPilotEnabled = false;
+                }
+            }*/
 
-            PoseVelocity2dDual<Time> command = new HolonomicController(
-                    PARAMS.axialGain, PARAMS.lateralGain, PARAMS.headingGain,
-                    PARAMS.axialVelGain, PARAMS.lateralVelGain, PARAMS.headingVelGain
-            )
-                    .compute(txWorldTarget, pose, robotVelRobot);
-            driveCommandWriter.write(new DriveCommandMessage(command));
-
-            MecanumKinematics.WheelVelocities<Time> wheelVels = kinematics.inverse(command);
-            double voltage = voltageSensor.getVoltage();
-            final MotorFeedforward feedforward = new MotorFeedforward(PARAMS.kS,
-                    PARAMS.kV / PARAMS.inPerTick, PARAMS.kA / PARAMS.inPerTick);
-            double leftFrontPower = feedforward.compute(wheelVels.leftFront) / voltage;
-            double leftBackPower = feedforward.compute(wheelVels.leftBack) / voltage;
-            double rightBackPower = feedforward.compute(wheelVels.rightBack) / voltage;
-            double rightFrontPower = feedforward.compute(wheelVels.rightFront) / voltage;
-            mecanumCommandWriter.write(new MecanumCommandMessage(
-                    voltage, leftFrontPower, leftBackPower, rightBackPower, rightFrontPower
-            ));
-
-            leftFront.setPower(feedforward.compute(wheelVels.leftFront) / voltage);
-            leftBack.setPower(feedforward.compute(wheelVels.leftBack) / voltage);
-            rightBack.setPower(feedforward.compute(wheelVels.rightBack) / voltage);
-            rightFront.setPower(feedforward.compute(wheelVels.rightFront) / voltage);
-
-            Canvas c = p.fieldOverlay();
-            drawPoseHistory(c);
-
-            c.setStroke("#4CAF50");
-            Drawing.drawRobot(c, txWorldTarget.value());
-
-            c.setStroke("#3F51B5");
-            Drawing.drawRobot(c, pose);
-
-            c.setStroke("#7C4DFFFF");
-            c.fillCircle(turn.beginPose.position.x, turn.beginPose.position.y, 2);
-
-            return true;
+            if (Math.abs(distance) < 15) {
+                Movement.movementResult r = Movement.pointAngle(Math.toRadians(-90), 1, Math.toRadians(30));
+            }
         }
 
-        @Override
-        public void preview(Canvas c) {
-            c.setStroke("#7C4DFF7A");
-            c.fillCircle(turn.beginPose.position.x, turn.beginPose.position.y, 2);
-        }
-    }
 
-    public PoseVelocity2d updatePoseEstimate() {
-        Twist2dDual<Time> twist = localizer.update();
-        pose = pose.plus(twist.value());
+        ////////////// THIS IS HANGING STUF GET GOOD /////
 
-        poseHistory.add(pose);
-        while (poseHistory.size() > 100) {
-            poseHistory.removeFirst();
-        }
+        robotLiftPosition = robotLift.getCurrentPosition();
 
-        estimatedPoseWriter.write(new PoseMessage(pose));
+        if (ButtonPress.isGamepad1_b_pressed()) {
 
-        return twist.velocity().value();
-    }
+            state += 1;
 
-    private void drawPoseHistory(Canvas c) {
-        double[] xPoints = new double[poseHistory.size()];
-        double[] yPoints = new double[poseHistory.size()];
-
-        int i = 0;
-        for (Pose2d t : poseHistory) {
-            xPoints[i] = t.position.x;
-            yPoints[i] = t.position.y;
-
-            i++;
+            if (state == 1) {
+                //pControllerRobotLift.setSetPoint(500); - commented out to prevent damage of hoist
+                droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(0.62); // 0.62 works great // bigger number is steeper angle
+                shootDroneAutomation = true;
+                shootDroneAutomationStartTime = SystemClock.uptimeMillis();
+            } else if (state == 2) {
+                pControllerRobotLift.setSetPoint(robotLiftMaxTicks);
+                droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(0.3);
+                shootDroneAutomation = false;
+            } else if (state == 3) {
+                droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(0.8);
+                pControllerRobotLift.setSetPoint(100);
+                shootDroneAutomation = false;
+                state = 0;
+            }
         }
 
-        c.setStrokeWidth(1);
-        c.setStroke("#3F51B5");
-        c.strokePolyline(xPoints, yPoints);
-    }
+        if (shootDroneAutomation) {
+            if (SystemClock.uptimeMillis() - shootDroneAutomationStartTime > 500) {
+                droneLauncher.setDroneLauncherPosition(0.19);  //launch drone (trigger)
+                if (SystemClock.uptimeMillis() - shootDroneAutomationStartTime > 850) {
+                    droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(0.8);
+                    droneLauncher.setDroneLauncherPosition(0.1);
+                    shootDroneAutomation = false;
+                }
+            }
+        }
 
-    public TrajectoryActionBuilder actionBuilder(Pose2d beginPose) {
-        return new TrajectoryActionBuilder(
-                TurnAction::new,
-                FollowTrajectoryAction::new,
-                new TrajectoryBuilderParams(
-                        1e-6,
-                        new ProfileParams(
-                                0.25, 0.1, 1e-2
-                        )
-                ),
-                beginPose, 0.0,
-                defaultTurnConstraints,
-                defaultVelConstraint, defaultAccelConstraint
-        );
+        if (gamepad1.right_trigger > .5 && robotLiftPosition < robotLiftMaxTicks) {   ///move lift up and sets controller position
+
+            robotLift.setPower(0.2);
+            pControllerRobotLift.setSetPoint(robotLiftPosition);
+            shootDroneAutomation = false;
+
+        } else if (gamepad1.left_trigger > .5 && robotLiftPosition > 30) {  //move lift down and sets controller position
+
+            robotLift.setPower(-1);
+            pControllerRobotLift.setSetPoint(robotLiftPosition);
+            shootDroneAutomation = false;
+
+        } else {                                       //uses proportional controller to hold lift in correct spot
+            if (robotLiftPosition < pControllerRobotLift.setPoint) {
+
+                robotLift.setPower(minPowerLift +
+                        pControllerRobotLift.getComputedOutput(robotLiftPosition));
+            } else {
+                robotLift.setPower(minPowerLift -
+                        pControllerRobotLift.getComputedOutput(robotLiftPosition));
+            }
+        }
+
+        //////////////////////////////////////////////////
+
+//        // rumble - endgame * * * * * * * * * * * * * * * * *
+//        if (runtime.seconds()>80 && !rumblePreVal) {
+//
+//            gamepad1.rumble(1,1 ,1000); //(double rumble1, double rumble2, int durationMS);
+//            gamepad2.rumble(1,1 ,1000);
+//
+//            rumblePreVal = true;
+//        }
+//        //* * * * * * * * * * * * * * * * * * * * * * * * * *
+
+
+        telemetry.addData("Robot Lift Encoder", robotLiftPosition);
+
+        telemetry.addData("world x", worldXPosition);
+        telemetry.addData("world y", worldYPosition);
+        telemetry.addData("world ang", Math.toDegrees(worldAngle_rad));
+        telemetry.addData("Height", height);
+        //  telemetry.addData("runtime:", runtime);
+        //telemetry.addData("Wanted Lift Pos", pControllerLift.)
     }
 }
+
+
+
