@@ -32,13 +32,13 @@ public abstract class AutoMaster extends OpMode {
 
     FourBars fourBars = null;
     Intake intake = null;
-    Grippers grippers = null;
+    Wrist wrist = null;
     FourBarRotator fourBarRotator = null;
     PixelTwister pixelTwister = null;
     DroneAndRobotLiftRotator droneAndRobotLiftRotator = null;
     DroneLauncher droneLauncher = null;
 
-    IntakeServo intakeServo = null;
+    IntakeJawServo intakeJawServo = null;
 
     DigitalChannel limitSwitch = null;
 
@@ -85,7 +85,7 @@ public abstract class AutoMaster extends OpMode {
     Servo pawright;
 
     // Vision for Tensor
-
+/*
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
     // TFOD_MODEL_ASSET points to a model file stored in the project Asset location,
@@ -99,6 +99,7 @@ public abstract class AutoMaster extends OpMode {
             "TPB",
             "TPR",
     };
+    */
 
     /**
      * The variable to store our instance of the TensorFlow Object Detection processor.
@@ -108,7 +109,7 @@ public abstract class AutoMaster extends OpMode {
     /**
      * The variable to store our instance of the vision portal.
      */
-    private VisionPortal visionPortal;
+    //private VisionPortal visionPortal;
 
 
     //////// STATE MACHINE STUFF BELOW DO NOT TOUCH ////////
@@ -176,7 +177,7 @@ public abstract class AutoMaster extends OpMode {
     @Override
     public void init() {
         //initTfod();
-
+/*
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId",
                 "id",
                 hardwareMap.appContext.getPackageName());
@@ -187,49 +188,51 @@ public abstract class AutoMaster extends OpMode {
         vision.openCameraDevice();
         vision.setPipeline(new Vision.AutoVisionPipeline());
         vision.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+*/
+        //limitSwitch = hardwareMap.get(DigitalChannel.class, "lift_limit_switch");
 
-        limitSwitch = hardwareMap.get(DigitalChannel.class, "lift_limit_switch");
-
-        fourBars = new FourBars(hardwareMap);
+        //fourBars = new FourBars(hardwareMap);
         intake = new Intake(hardwareMap);
-        grippers = new Grippers(hardwareMap);
-        fourBarRotator = new FourBarRotator(hardwareMap);
-        pixelTwister = new PixelTwister(hardwareMap);
-        droneAndRobotLiftRotator = new DroneAndRobotLiftRotator(hardwareMap);
-        droneLauncher = new DroneLauncher(hardwareMap);
-        intakeServo = new IntakeServo(hardwareMap);
+        wrist = new Wrist(hardwareMap);
+        //fourBarRotator = new FourBarRotator(hardwareMap);
+        //pixelTwister = new PixelTwister(hardwareMap);
+        //droneAndRobotLiftRotator = new DroneAndRobotLiftRotator(hardwareMap);
+        //droneLauncher = new DroneLauncher(hardwareMap);
+        intakeJawServo = new IntakeJawServo(hardwareMap);
 
-        pixelLift = new PixelLift(hardwareMap);
+        //pixelLift = new PixelLift(hardwareMap);
 
-        robotLift = hardwareMap.get(DcMotorEx.class, "robotLift");
-        robotLift.setDirection(DcMotor.Direction.REVERSE);
-        robotLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        robotLift.setPower(0);
+        //robotLift = hardwareMap.get(DcMotorEx.class, "robotLift");
+        //robotLift.setDirection(DcMotor.Direction.REVERSE);
+        //robotLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //robotLift.setPower(0);
         // TODO: REMOVE THIS ASAP
-        robotLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // to reset at initiation
-        robotLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robotLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        //robotLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // to reset at initiation
+        //robotLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //robotLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        pawright = hardwareMap.get(Servo.class, "pr");
-        pawright.setPosition(0.285);
+        //pawright = hardwareMap.get(Servo.class, "pr"); from center stage
+        //pawright.setPosition(0.285);
 
-        grippers.setFrontGripperPosition(.66);
-        grippers.setBackGripperPosition(Constants.BACK_GRIPPER_OPEN);
-        pixelTwister.setPixelTwisterPosition(.48);
-        fourBarRotator.setFourBarRotatorPosition(.82);
-        fourBars.setFourBarPosition(1);
-        droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(.65);
-        droneLauncher.setDroneLauncherPosition(.1);
+        wrist.setIntakeTwistPosition(0);
+        wrist.setIntakeTiltPosition(0);
+        //pixelTwister.setPixelTwisterPosition(.48);
+        //fourBarRotator.setFourBarRotatorPosition(.82);
+        //fourBars.setFourBarPosition(1);
+        //droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(.65);
+        //droneLauncher.setDroneLauncherPosition(.1);
 
+        /*
         pControllerRobotLift.setInputRange(0, robotLiftMaxTicks);
         pControllerRobotLift.setSetPoint(0);
         pControllerRobotLift.setOutputRange(minPowerRobotLift, maxPowerRobotLift);
         pControllerRobotLift.setThresholdValue(5);
 
         pixelLift.InitPixelLiftPIDController();
-
+*/
 
         // distance sensors
+        /*
         frontPixelReceiver = hardwareMap.get(DigitalChannel.class, "frontPixelReceiver");
         frontPixelReceiver.setMode(DigitalChannel.Mode.INPUT);
 
@@ -238,6 +241,7 @@ public abstract class AutoMaster extends OpMode {
 
         rightDistance = hardwareMap.get(AnalogInput.class, "distanceTest");
         leftDistance = hardwareMap.get(AnalogInput.class, "distanceLeft");
+        */
     }
 
     public double mmToIn(double in) {
@@ -354,6 +358,7 @@ public abstract class AutoMaster extends OpMode {
             }
         }
 
+
         telemetry.addData("Position to change", position);
         telemetry.addData("Position 1 Box X", Vision.getSample1X());
         telemetry.addData("Position 1 Box Y", Vision.getSample1Y());
@@ -377,13 +382,14 @@ public abstract class AutoMaster extends OpMode {
         } else if (Vision.getCubeLocation() == 2) {
             telemetry.addData("Current Team Maker Position", "Right");
         }
+
     }
 
     @Override
     public void start() {
         programStage = 0;
 
-        vision.stopStreamingVision();
+        //vision.stopStreamingVision();
         //robotLiftAlignServo.setPosition(robotLiftRotatorPosition);
     }
 

@@ -66,15 +66,15 @@ public class NewTeleop extends AutoMaster {
 
         drive = new MecanumDrive(hardwareMap, new Pose2d(17.75 / 2, 23.75, Math.PI));  // this initilizes the Odo?
 
-        fourBars.setFourBarPosition(0.4);
+        fourBars.setFourBarPosition(0.0);
 
-        grippers.frontGripper.setPosition(.16); // init grippers closed
-        grippers.backGripper.setPosition(.21);
+        wrist.intakeTwist.setPosition(0); // init Twist
+        wrist.intakeTilt.setPosition(0); // init Tilt
 
-        intakeServo.intakeServo.setPosition(0);
+        intakeJawServo.intakeJawServo.setPosition(0);
 
-        pixelHolder = hardwareMap.get(Servo.class, "pixelHolder");
-        pixelHolder.setPosition(0.27);
+        //pixelHolder = hardwareMap.get(Servo.class, "pixelHolder");
+        //pixelHolder.setPosition(0.27);
 
     }
 
@@ -82,16 +82,16 @@ public class NewTeleop extends AutoMaster {
     public void start() {
         super.start(); //what is super.start?
 
-        fourBars.setFourBarPosition(0.4);
+        //fourBars.setFourBarPosition(0.4);
 
-        grippers.frontGripper.setPosition(.16);
-        grippers.backGripper.setPosition(.21);
+        wrist.intakeTwist.setPosition(0);
+        wrist.intakeTilt.setPosition(0);
 
-        pixelTwister.setPixelTwisterPosition(.49);
+        //pixelTwister.setPixelTwisterPosition(.49);
 
-        pawright.setPosition(0.59);
+        //pawright.setPosition(0.59);
 
-        droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(0.8);
+        //droneAndRobotLiftRotator.setDroneAndRobotLiftRotatorPosition(0.8);
 
 
         //fourBars.setFourBarPosition(0.4);
@@ -102,7 +102,7 @@ public class NewTeleop extends AutoMaster {
     @Override
     public void stop() {
         super.stop(); //what is super.stop?
-        droneAndRobotLiftRotator.droneAndRobotLiftRotator.setPwmDisable();
+        //droneAndRobotLiftRotator.droneAndRobotLiftRotator.setPwmDisable();
 
         //for rumble added 4/6
         //runtime.reset();
@@ -214,7 +214,7 @@ public class NewTeleop extends AutoMaster {
     public void mainLoop() {
         ///telemetry.addData("range", String.format("%.01f mm", sensorDistance.getDistance(DistanceUnit.MM)));
 
-        double liftPosition = pixelLift.pixelLift.getCurrentPosition();
+        //double liftPosition = pixelLift.pixelLift.getCurrentPosition();
 
 
         ButtonPress.giveMeInputs(gamepad1.a, gamepad1.b, gamepad1.x, gamepad1.y, gamepad1.dpad_up,
@@ -224,11 +224,15 @@ public class NewTeleop extends AutoMaster {
                 gamepad2.dpad_down, gamepad2.dpad_right, gamepad2.dpad_left, gamepad2.right_bumper,
                 gamepad2.left_bumper, gamepad2.left_stick_button, gamepad2.right_stick_button);
 
+
+        /*
         if (ButtonPress.isGamepad1_right_stick_button_pressed()) {
             launchStartX = worldXPosition;
             launchStartY = worldYPosition;
         }
 
+         */
+/*
         if (gamepad1.right_stick_button) {  // this is for drone launch Auto drive
 
             autoDriveToDroneLaunch = true;
@@ -256,7 +260,8 @@ public class NewTeleop extends AutoMaster {
         } else {
             autoDriveToDroneLaunch = false;
         }
-
+        */
+/*
         if (Math.abs(gamepad1.right_stick_x) > 0.1 || Math.abs(gamepad1.right_stick_y) > 0.1 || Math.abs(gamepad1.left_stick_x) > 0.1 || Math.abs(gamepad1.left_stick_y) > 0.1) {
             dropPixelAutomation = false;
             autoPilotEnabled = false;  // this turns auto off if sticks are touched
@@ -265,7 +270,7 @@ public class NewTeleop extends AutoMaster {
             autoDriveToDroneLaunch = false;
         }
 
-
+*/
 
 
         /*if (ButtonPress.isGamepad2_b_pressed()) {
@@ -288,43 +293,38 @@ public class NewTeleop extends AutoMaster {
 
 
         if (gamepad2.right_trigger > 0.1) {
-            intakeServo.intakeServo.setPosition(0.31);
-            intake.intake.setPower(1);
-            intake.conveyor.setPower(-.91);
+            intakeJawServo.intakeJawServo.setPosition(0.0);
+            intake.vexIntake.setPower(-.91);
         } else if (gamepad2.left_trigger > 0.1) {
-            intakeServo.intakeServo.setPosition(0.31);
-            intake.intake.setPower(-1);
-            intake.conveyor.setPower(-.91);
+            intakeJawServo.intakeJawServo.setPosition(0.31);
+            intake.vexIntake.setPower(-.91);
         } else {
             // intake stuff
             if (ButtonPress.isGamepad1_right_bumper_pressed()) {  //intake toggle
                 if (intakeOn) {
-                    intakeServo.intakeServo.setPosition(0);
-                    intake.intake.setPower(0);
-                    //intake.conveyor.setPower(0);
+                    intakeJawServo.intakeJawServo.setPosition(0);
+                    intake.vexIntake.setPower(0);
                     intakeOn = false;
                 } else {
-                    intakeServo.intakeServo.setPosition(0.31);
-                    intake.intake.setPower(1);
-                    intake.conveyor.setPower(-.91);
+                    intakeJawServo.intakeJawServo.setPosition(0.31);
+                    intake.vexIntake.setPower(-.91);
                     intakeOn = true;
                 }
             } else if (ButtonPress.isGamepad1_left_bumper_pressed()) {  //outtake toggle.
                 if (outtakeOn) {
-                    intakeServo.intakeServo.setPosition(0);
-                    intake.intake.setPower(0);
-                    //intake.conveyor.setPower(0);
+                    intakeJawServo.intakeJawServo.setPosition(0);
+                    intake.vexIntake.setPower(0);
                     outtakeOn = false;
                 } else {
-                    intakeServo.intakeServo.setPosition(0.31);
-                    intake.intake.setPower(-1);
-                    intake.conveyor.setPower(-.91);
+                    intakeJawServo.intakeJawServo.setPosition(0.31);
+                    intake.vexIntake.setPower(-.91);
                     outtakeOn = true;
                 }
             }
         }
 
         // lift stuff for second controller
+ /*
         if (ButtonPress.isGamepad2_b_pressed()) {
             height += 1;
         } else if (ButtonPress.isGamepad2_a_pressed()) {
@@ -334,40 +334,42 @@ public class NewTeleop extends AutoMaster {
         height = Range.clip(height, 1, 10);
 
         if (ButtonPress.isGamepad2_right_bumper_pressed()) {   // this is for pixel Lift placement height
-            pixelLift.pControllerPixelLift.setSetPoint(700 + height * 300);   // how is this intitated? I only see it in Auto master?
-            fourBars.setFourBarPosition(0);
-            intake.conveyor.setPower(0);
+            //pixelLift.pControllerPixelLift.setSetPoint(700 + height * 300);   // how is this intitated? I only see it in Auto master?
+            //fourBars.setFourBarPosition(0);
+            intake.vexIntake.setPower(0);
             liftPrepDeliveryAutomation = true;
             liftPrepDeliveryAutomationStarTime = SystemClock.uptimeMillis(); // captures run time and sets to start time variable
 
         } else if (ButtonPress.isGamepad2_left_bumper_pressed()) {  // this is for pixel lift home state. gets twister to safe position
-            pixelTwister.setPixelTwisterPosition(.49);
+            //pixelTwister.setPixelTwisterPosition(.49);
 
-            setFourBarCenterAutomation = true;
-            setFourBarCenterAutomationStarTime = SystemClock.uptimeMillis();
+            //setFourBarCenterAutomation = true;
+            //setFourBarCenterAutomationStarTime = SystemClock.uptimeMillis();
         }
 
         if (liftPrepDeliveryAutomation) {  // this gives time for twister to get safe, and pixel lift is in safe elevation then sets 4 bar rotator to placement position
             if (SystemClock.uptimeMillis() - liftPrepDeliveryAutomationStarTime > 250 && liftPosition > 400) {
-                fourBarRotator.setFourBarRotatorPosition(.45); //was .45 !!!!!!!!!!!!!!!!!!!!!!!!!! change requested by drive team on 04/04/24
-                liftPrepDeliveryAutomation = false;
+                //fourBarRotator.setFourBarRotatorPosition(.45); //was .45 !!!!!!!!!!!!!!!!!!!!!!!!!! change requested by drive team on 04/04/24
+                //liftPrepDeliveryAutomation = false;
             }
         }
+        */
+
 // this is for pixel ready (home) position for grab.. can't grab if lift isnt down...
 //
-
+/*
         if (ButtonPress.isGamepad2_y_pressed() && liftPosition < 100) {
-            grippers.setFrontGripperPosition(.16);  // sets grippers to closed (released) position
-            grippers.setBackGripperPosition(.21);
+            wrist.intakeTwist.setPosition(.16);  //
+            wrist.intakeTilt.setPosition(.21);
 
-            pixelTwister.setPixelTwisterPosition(.49);
+            //pixelTwister.setPixelTwisterPosition(.49);
 
-            setFourBarCenterAutomation = true;
-            setFourBarCenterAutomationStarTime = SystemClock.uptimeMillis();
+            //setFourBarCenterAutomation = true;
+            //setFourBarCenterAutomationStarTime = SystemClock.uptimeMillis();
         }
-
-        telemetry.addData("Is Touched", limitSwitch.getState());
-
+*/
+        //telemetry.addData("Is Touched", limitSwitch.getState());
+/*
         if (setFourBarCenterAutomation) {
             if (SystemClock.uptimeMillis() - setFourBarCenterAutomationStarTime > 500) { // gives grabbers and twister time to get to home position
                 fourBars.setFourBarPosition(0.4);
@@ -388,34 +390,38 @@ public class NewTeleop extends AutoMaster {
                 }
             }
         }
+        */
 
 //THis is for the pixel grab
+        /*
         if (ButtonPress.isGamepad2_x_pressed() && liftPosition < 100) {
             //pixelTwister.setPixelTwisterPosition(.49);
 
 
-            grippers.setFrontGripperPosition(.16); //make sure grippers, 4 bars, rotator are in collection state
-            grippers.setBackGripperPosition(.21);
+            wrist.intakeTwist.setPosition(.16); //
+            wrist.intakeTilt.setPosition(.21);
 
-            fourBars.setFourBarPosition(0.75);
-            fourBarRotator.setFourBarRotatorPosition(0.825);
+            //fourBars.setFourBarPosition(0.75);
+            //fourBarRotator.setFourBarRotatorPosition(0.825);
 
-            intake.conveyor.setPower(-.91); // turns on intake to have pixels lined up correctly
+            intake.vexIntake.setPower(-.91); // turns on intake to have pixels lined up correctly
             pickupPixelAutomation = true;  // starts the pixel pick up state
             pickupPixelAutomationStartTime = SystemClock.uptimeMillis();
         }
 
-        // this is for the pixel pick up
+         */
 
+        // this is for the pixel pick up
+/*
         if (pickupPixelAutomation) {
             double wantedPos = 1;    // this is for the slow pick up target servo pos.
             double currentPos = fourBars.getLastSetPosition();
             currentPos += 0.01; //increments servo pos. each loop
             if (SystemClock.uptimeMillis() - pickupPixelAutomationStartTime > 400 && currentPos >= 0.95) { //  waits for grippers, 4 bars, rotator to get into collection state before grabbing
-                fourBars.setFourBarPosition(1);
-                intake.conveyor.setPower(0);
-                grippers.setFrontGripperPosition(0.66);  //grab pixels
-                grippers.setBackGripperPosition(0.74);
+                //fourBars.setFourBarPosition(1);
+                intake.vexIntake.setPower(0);
+                wrist.intakeTwist.setPosition(.66);  //grab pixels
+                wrist.intakeTilt.setPosition(.74);
                 pickupPixelAutomation = false; //turns off pick Auto.
             } else {
                 if (SystemClock.uptimeMillis() - pickupPixelAutomationStartTime > 250) {  // this changes the 4 bars with each loop when it gets .95 it'll do the above if satatement
@@ -426,11 +432,13 @@ public class NewTeleop extends AutoMaster {
                 }
             }
         }
-
+        */
+/*
         if (Math.abs(gamepad2.right_stick_y) > 0.01) {
             setFourBarCenterAutomation = false;
         }
-
+ */
+/*
         if (Math.abs(gamepad2.right_stick_y) < 0.01 && !setFourBarCenterAutomation) {  //for pixel lift control
             //if (pixelLift.pixelLiftPosition)
             //pixelLift.updateLiftPosition();
@@ -446,7 +454,8 @@ public class NewTeleop extends AutoMaster {
             dropPixelAutomation2 = true;
             dropPixelAutomationStarTime = SystemClock.uptimeMillis();
         }
-
+        */
+/*
         if (ButtonPress.isGamepad1_a_pressed()) {
             double minDistance = Double.POSITIVE_INFINITY; // start his off crazy high
             int i = 0;
@@ -458,6 +467,7 @@ public class NewTeleop extends AutoMaster {
                 Log.i("DEBUG Bridge Point Y: ", String.valueOf(point.y));
                 Log.i("DEBUG Bridge Distance: ", String.valueOf(distance));
                 Log.i("DEBUG -----------------------------", "----------");*/
+        /*
                 if (distance < minDistance) {
                     minDistance = distance;
                     closestPoint = new PointDouble(point.x, point.y);
@@ -465,18 +475,22 @@ public class NewTeleop extends AutoMaster {
                 }
                 i++;
             }
+            */
+
             /*Log.i("DEBUG ----THIS IS THE ONE WE WANT TO GO TO------", "----------");
             Log.i("DEBUG Current Index: ", String.valueOf(closestPointIndex));
             Log.i("DEBUG Bridge Point X: ", String.valueOf(closestPoint.x));
             Log.i("DEBUG Bridge Point Y: ", String.valueOf(closestPoint.y));
             Log.i("DEBUG -----------------------------", "----------");*/
+        /*
             startXDriveBridge = worldXPosition;
             startYDriveBridge = worldYPosition;
         }
+        */
 
-        telemetry.addData("Closest Point X", closestPoint.x);
-        telemetry.addData("Closest Point Y", closestPoint.y);
-
+        //telemetry.addData("Closest Point X", closestPoint.x);
+        //telemetry.addData("Closest Point Y", closestPoint.y);
+/*
         if (gamepad1.a) {
             ArrayList<CurvePoint> points = new ArrayList<>();
 
@@ -507,8 +521,8 @@ public class NewTeleop extends AutoMaster {
         } else {
             lockHeading = false;
         }
-
-
+*/
+/*
         if (dropPixelAutomation2) {
             if (SystemClock.uptimeMillis() - dropPixelAutomationStarTime > 1250) { // was 1250 - added extra time when we added async drops
                 pixelTwister.setPixelTwisterPosition(.49);
@@ -519,6 +533,8 @@ public class NewTeleop extends AutoMaster {
                 dropPixelAutomation2 = false;
             }
         }
+        */
+        /*
         if (dropPixelAutomation) {  // releases the the pixels
 
             if (pixelTwister.pixelTwister.getPosition() > 0.95 || pixelTwister.pixelTwister.getPosition() < 0.1) //added statements to drop top pixel after waiting
@@ -553,11 +569,14 @@ public class NewTeleop extends AutoMaster {
                 dropPixelAutomation = false;
             }
         }
+        */
 
-        telemetry.addData("Lift position", liftPosition);
-        telemetry.addData("In Four Bar Automation", setFourBarCenterAutomation);
+        //telemetry.addData("Lift position", liftPosition);
+        //telemetry.addData("In Four Bar Automation", setFourBarCenterAutomation);
 
         // TODO: REMOVE
+
+      /*
         if (liftPosition > 300 && fourBars.right4Bar.getPosition() < 0.2) {  // if lift is higher than 300 and 4 bars are out can rotate pixel twister
             if (ButtonPress.isGamepad2_dpad_left_pressed()) {  // ask Miles about the .get curent pos in the if statement. this doesnt call each loop?
                 pixelTwister.setPixelTwisterPosition(.775);  // twists left to 90
@@ -579,13 +598,16 @@ public class NewTeleop extends AutoMaster {
                 }
             }
         }
-
+*/
+        /*
         if (ButtonPress.isGamepad2_dpad_down_pressed()) {  // if down is pressed go to down.
             pixelTwister.setPixelTwisterPosition(.49);
             isLeft = false;
             isRight = false;
         }
+        */
 
+/*
         if (ButtonPress.isGamepad1_left_stick_button_pressed()) {    // This is teleOpp recal
             //25.4
             // TODO: ADD IN NEW SENSOR
@@ -602,28 +624,35 @@ public class NewTeleop extends AutoMaster {
                 targetPose = drive.pose; //sets the tele auto drive target postion
             }
         }
+*/
+        // telemetry.addData("RED DISTANCE SENSOR", getLeftDistanceIn());
 
-        telemetry.addData("RED DISTANCE SENSOR", getLeftDistanceIn());
 
+        /*
         if (ButtonPress.isGamepad1_dpad_right_pressed()) {
             //targetPose = new Pose2d(targetPose.position.x-0.5, targetPose.position.y, targetPose.heading.toDouble());  // this moves target pose right 1/2 inch
 
             targetDrop = 2;
         }
-
+        */
+/*
         if (ButtonPress.isGamepad1_dpad_left_pressed()) {
             //targetPose = new Pose2d(targetPose.position.x+0.5, targetPose.position.y, targetPose.heading.toDouble()); // this moves target pose left 1/2 inch
 
             targetDrop = 0;
         }
-
+        */
+/*
         if (ButtonPress.isGamepad1_dpad_up_pressed()) {
             //targetPose = new Pose2d(targetPose.position.x+0.5, targetPose.position.y, targetPose.heading.toDouble()); // this moves target pose left 1/2 inch
 
             targetDrop = 1;
         }
+        */
 
-        telemetry.addData("Target X", targetPose.position.x);
+        //telemetry.addData("Target X", targetPose.position.x);
+
+        /*
 
         if (ButtonPress.isGamepad1_y_pressed()) {  // when y is pressed start auto drive
             if (targetPose.position.x != 0 && targetPose.position.y != 0) {
@@ -632,7 +661,8 @@ public class NewTeleop extends AutoMaster {
                 autoPilotEnabled = true;
             }
         }
-
+        */
+/*
         if (autoPilotEnabled) {     // auto drive points.
             ArrayList<CurvePoint> points = new ArrayList<>();
             points.add(new CurvePoint(startX, startY,
@@ -682,6 +712,7 @@ public class NewTeleop extends AutoMaster {
                     //atBackdrop = true;
                 }
             }
+            */
 /*
             if (atBackdrop) {
                 movement_y = -0.2;
@@ -690,15 +721,15 @@ public class NewTeleop extends AutoMaster {
                     autoPilotEnabled = false;
                 }
             }*/
-
+/*
             if (Math.abs(distance) < 15) {
                 Movement.movementResult r = Movement.pointAngle(Math.toRadians(-90), 1, Math.toRadians(30));
             }
-        }
+            */
 
 
-        ////////////// THIS IS HANGING STUF GET GOOD /////
-
+        ////////////// THIS IS HANGING STUFF GET GOOD /////
+/*
         robotLiftPosition = robotLift.getCurrentPosition();
 
         if (ButtonPress.isGamepad1_b_pressed()) {
@@ -777,8 +808,13 @@ public class NewTeleop extends AutoMaster {
         telemetry.addData("Height", height);
         //  telemetry.addData("runtime:", runtime);
         //telemetry.addData("Wanted Lift Pos", pControllerLift.)
+
+    */
     }
+
 }
+
+
 
 
 
