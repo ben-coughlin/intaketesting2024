@@ -56,7 +56,7 @@ public class IntakeTest extends OpMode
     Intake intake = null;
     IntakeJawServo intakeJawServo = null;
     ElapsedTime runtime = new ElapsedTime();
-    boolean isGrabbingPixel;
+    boolean isGrabbingSample;
     boolean isOpeningIntake;
 
     /*
@@ -112,15 +112,15 @@ public class IntakeTest extends OpMode
 
         if (ButtonPress.isGamepad1_right_bumper_pressed()) {  //intake toggle
 
-            if (isGrabbingPixel) {
+            if (isGrabbingSample) {
                 intakeJawServo.intakeJawServo.setPosition(.8);
                 intake.vexIntake.setPower(0);
-                isGrabbingPixel = false;
+                isGrabbingSample = false;
 
             } else {
                 intakeJawServo.intakeJawServo.setPosition(.65);
                 intake.vexIntake.setPower(-.9);
-                isGrabbingPixel = true;
+                isGrabbingSample = true;
 
             }
         }
