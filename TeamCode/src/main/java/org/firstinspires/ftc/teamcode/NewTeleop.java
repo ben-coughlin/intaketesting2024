@@ -39,6 +39,7 @@ import static org.firstinspires.ftc.teamcode.RobotPosition.worldYPosition;
 import android.os.SystemClock;
 
 import com.acmerobotics.roadrunner.Pose2d;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
@@ -49,7 +50,7 @@ import java.util.HashMap;
 //import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 //import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-//@TeleOp(name = "NewTeleop", group = "Mechbot")
+@TeleOp(name = "NewTeleop", group = "Mechbot")
 public class NewTeleop extends AutoMaster {
 
     boolean justDidAReapproach = false;
@@ -64,14 +65,18 @@ public class NewTeleop extends AutoMaster {
     public void init() {
         super.init();      //Ask Miles what this is?
 
-        drive = new MecanumDrive(hardwareMap, new Pose2d(17.75 / 2, 23.75, Math.PI));  // this initilizes the Odo?
+        //drive = new MecanumDrive(hardwareMap, new Pose2d(17.75 / 2, 23.75, Math.PI));  // this initilizes the Odo?
 
-        fourBars.setFourBarPosition(0.0);
+        //fourBars.setFourBarPosition(0.0);
 
-        wrist.intakeTwist.setPosition(0); // init Twist
-        wrist.intakeTilt.setPosition(0); // init Tilt
+        //smaller is right, larger is to the left
+        wrist.intakeTwist.setPosition(.365); // init Twist
+        wrist.intakeTilt.setPosition(.725); // init Tilt
 
-        intakeJawServo.intakeJawServo.setPosition(0);
+        intakeJawServo.intakeJawServo.setPosition(.5);
+        //close position is 0 for jaw
+
+        //intakeJawServo.intakeJawServo.setPosition(0);
 
         //pixelHolder = hardwareMap.get(Servo.class, "pixelHolder");
         //pixelHolder.setPosition(0.27);

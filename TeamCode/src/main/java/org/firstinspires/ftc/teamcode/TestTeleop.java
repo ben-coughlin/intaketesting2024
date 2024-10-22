@@ -68,11 +68,12 @@ public class TestTeleop extends AutoMaster {
         wrist = new Wrist(hardwareMap);
         intakeJawServo = new IntakeJawServo(hardwareMap);
 
+//smaller is right, larger is to the left
+        wrist.intakeTwist.setPosition(.365); // init Twist
+        wrist.intakeTilt.setPosition(.725); // init Tilt
 
-        wrist.intakeTwist.setPosition(0); // init Twist
-        wrist.intakeTilt.setPosition(0); // init Tilt
-
-        intakeJawServo.intakeJawServo.setPosition(1);
+        intakeJawServo.intakeJawServo.setPosition(.5);
+        //close position is 0 for jaw
 
         //pixelHolder = hardwareMap.get(Servo.class, "pixelHolder");
         //pixelHolder.setPosition(0.27);
@@ -247,6 +248,13 @@ public class TestTeleop extends AutoMaster {
                     outtakeOn = true;
                 }
             }
+
+            telemetry.addData("twist:", wrist.intakeTwist.getPosition());
+            telemetry.addData("tilt:", wrist.intakeTilt.getPosition());
+            telemetry.addData("jaw:", intakeJawServo.intakeJawServo.getPosition());
+        telemetry.addData("intake noodles:", intake.vexIntake.getPower());
+        telemetry.update();
+
     }
 }
 
